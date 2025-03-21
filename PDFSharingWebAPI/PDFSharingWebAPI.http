@@ -1,0 +1,6 @@
+@PDFSharingWebAPI_HostAddress = http://localhost:5146
+
+POST {{PDFSharingWebAPI_HostAddress}}/api/BookList
+Accept: application/json
+
+###
