@@ -6,7 +6,7 @@ namespace PDFSharingWebAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class BookListController : ControllerBase
+public partial class BookListController : ControllerBase
 {
 
     string filePath = Path.Combine(Directory.GetCurrentDirectory(), "pdf");
@@ -44,6 +44,13 @@ public class BookListController : ControllerBase
             {
                 request.FileData.CopyTo(stream);
             }
+
+            if (!string.IsNullOrWhiteSpace(request.Description))
+            {
+                string descFilePath = Path.Combine(filePath, "Description.txt");
+                UpdateDescriptionFile(descFilePath, request.Name, request.Description);
+            }
+
             response.Result = "Success";
             response.Message = $"Successfully uploaded: {request.Name}";
         }
@@ -109,7 +116,7 @@ public class BookListController : ControllerBase
             return StatusCode(403, new RmvBookResponse
             {
                 Success = false,
-                Message = $"Unauthorized access: {ex.Message}"
+                Message = $"Access denied: {ex.Message}"
             });
         }
         catch (IOException ex)
