@@ -9,7 +9,6 @@ public class AddBookRequest
     [StringLength(500)]
     public String? Description { get; set; }
 
-    [FileExtensions(Extensions = "pdf")]
     public required IFormFile FileData { get; set; }
 }
 

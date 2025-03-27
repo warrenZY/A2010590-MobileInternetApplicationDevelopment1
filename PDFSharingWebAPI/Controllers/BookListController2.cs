@@ -22,7 +22,6 @@ public partial class BookListController : ControllerBase
             // Read description
             var descriptions = ReadDescriptionFile();
 
-
             // Search path
             var pdfFiles = Directory.GetFiles(filePath, "*.pdf", SearchOption.TopDirectoryOnly)
                 .Select(filePath => new FileInfo(filePath))
@@ -98,29 +97,26 @@ public partial class BookListController : ControllerBase
     {
         try
         {
-            // 安全获取文件名
             var safeFileName = Path.GetFileName(filename);
             if (string.IsNullOrEmpty(safeFileName))
             {
                 return BadRequest("Invalid file name");
             }
 
-            // 构建完整路径
             var fullPath = Path.Combine(filePath, safeFileName);
 
-            // 验证文件存在性
             if (!System.IO.File.Exists(fullPath))
             {
                 return NotFound($"File {safeFileName} not found");
             }
 
-            // 验证文件类型
+            // check required file type
             if (!Path.GetExtension(fullPath).Equals(".pdf", StringComparison.OrdinalIgnoreCase))
             {
                 return BadRequest("Requested file is not a PDF");
             }
 
-            // 设置预览响应头
+            // Allow browser previewing feature
             Response.Headers.Append("Content-Disposition", new ContentDispositionHeaderValue("inline")
             {
                 FileNameStar = safeFileName // 支持UTF-8文件名编码
