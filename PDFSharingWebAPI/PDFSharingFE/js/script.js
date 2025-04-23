@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = document.getElementById('regPassword').value;
             saveUserData(username, password);
             alert('注册成功！');
-            window.location.href = 'index.html';
+            window.location.href = 'main.html';
         };
     }
 
