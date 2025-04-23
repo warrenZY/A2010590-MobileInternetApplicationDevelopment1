@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF阅读中心</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="video-container">
+            <video controls>
+                <source src="media/video.mp4" type="video/mp4">
+                您的浏览器不支持视频播放
+            </video>
+        </div>
+
+        <div class="auth-form">
+            <h2>用户登录</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>用户名：</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label>密码：</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit">登录</button>
+            </form>
+            <p style="margin-top: 1rem;">
+                没有账号？<a href="register.html">立即注册</a>
+            </p>
+        </div>
+    </div>
+    <script src="js/script.js"></script>
+</body>
+</html>

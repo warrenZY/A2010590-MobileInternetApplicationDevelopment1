@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.FileProviders;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -34,5 +37,18 @@ app.UseAuthorization();
 app.UseCors("AllowAll");
 
 app.MapControllers();
+
+var options = new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "PDFSharingFE")),
+    RequestPath = "/static",
+};
+app.UseStaticFiles(options);
+var defaultFileOptions = new DefaultFilesOptions();
+defaultFileOptions.DefaultFileNames.Clear();
+defaultFileOptions.DefaultFileNames.Add("main.html");
+app.UseDefaultFiles(defaultFileOptions);
+//Defalut redirect to main.html
+app.MapGet("/", () => Results.Redirect("/static/main.html"));
 
 app.Run();

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户注册</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/canvas.css">
+</head>
+<body>
+    <canvas id="backgroundCanvas"></canvas>
+
+    <div class="container">
+        <div class="auth-form">
+            <h2>用户注册</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label>用户名：</label>
+                    <input type="text" id="regUsername" required>
+                </div>
+                <div class="form-group">
+                    <label>密码：</label>
+                    <input type="password" id="regPassword" required>
+                </div>
+                <button type="submit">注册</button>
+            </form>
+            <p style="margin-top: 1rem;">
+                已有账号？<a href="main.html">立即登录</a>
+            </p>
+        </div>
+    </div>
+    <script src="js/script.js"></script>
+    <script src="js/canvas.js"></script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF书籍列表</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/list-style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>PDF书籍库</h1>
+
+        <div class="upload-area">
+            <div class="drop-zone" id="dropZone">
+                <div>拖拽PDF文件至此区域上传</div>
+                <div class="or-text">或</div>
+                <input type="file" id="fileInput" accept=".pdf">
+                <label for="fileInput">选择文件</label>
+            </div>
+
+            <div class="form-group">
+                <label for="fileName">文档名称(必填)：</label>
+                <div class="row-layout">
+                    <input type="text" id="fileName" required>
+                    <!-- 上传按钮 -->
+                    <button id="uploadBtn" class="upload-btn">上传文档</button>
+                </div>
+                <label for="description">备注(选填)：</label>
+                <div class="row-layout">
+                    <input type="text" id="description" required>
+                </div>
+            </div>
+
+        </div>
+        
+
+        <!-- 状态提示 -->
+        <div id="status" class="status"></div>
+
+
+        <hr />
+
+
+        <div class="book-list" id="bookList">
+            <!-- 动态加载书籍 -->
+        </div>
+    </div>
+    <script src="js/list-script.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>

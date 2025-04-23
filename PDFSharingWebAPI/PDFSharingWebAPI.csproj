@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -11,4 +11,17 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="PDFSharingFE\**" Exclude="PDFSharingFE\PDF\**">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Content Include="PDFSharingFE\PDF\**">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <TargetPath>$(DestinationBasePath)PDF\%(Filename)%(Extension)</TargetPath>
+    </Content>
+  </ItemGroup>
 </Project>
+ 

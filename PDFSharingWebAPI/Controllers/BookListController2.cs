@@ -16,7 +16,8 @@ public partial class BookListController : ControllerBase
         {
             if (!Directory.Exists(filePath))
             {
-                return NotFound(new { Message = "PDF file directory not found" });
+                Directory.CreateDirectory(filePath);
+                return NotFound(new { Message = "PDF file directory not found, creating new..." });
             }
 
             // Read description

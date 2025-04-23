@@ -1,0 +1,9 @@
+  #backgroundCanvas {
+    position: fixed;  /* 改为fixed定位 */
+    top: 0;
+    left: 0;
+    z-index: -1;      /* 确保在内容层下方 */
+    width: 100vw;     /* 使用视口单位 */
+    height: 100vh;
+    display: block;    /* 避免inline元素的间隙问题 */
+  }

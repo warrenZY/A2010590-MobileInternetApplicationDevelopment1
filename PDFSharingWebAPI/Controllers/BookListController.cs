@@ -62,7 +62,7 @@ public partial class BookListController : ControllerBase
         return response;
     }
 
-    //Delet /api/BookList
+    //Delete /api/BookList
     [HttpDelete]
     public ActionResult<RmvBookResponse> Delete([FromBody]RmvBookRequest request)
     {
