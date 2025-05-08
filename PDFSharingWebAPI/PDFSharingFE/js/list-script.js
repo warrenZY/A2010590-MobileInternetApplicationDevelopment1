@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
             uploadBtn.disabled = true;
             showStatus('上传中...');
 
-            const response = await fetch('http://localhost:5146/api/BookList', {
+            const response = await fetch('/api/BookList', {
                 method: 'POST',
                 body: formData
             });
@@ -124,7 +124,7 @@ const sampleBooks = [
 async function fetchAndRenderBooks() {
     const status = document.getElementById('status');
     try {
-        const response = await fetch('http://localhost:5146/api/BookList');
+        const response = await fetch('/api/BookList');
 
         if (!response.ok) {
             throw new Error(`HTTP错误! 状态码: ${response.status}`);
@@ -158,7 +158,7 @@ function renderBooks(books) {
                 </span>
             </div>
             <div class="book-actions">
-                <a href="http://localhost:5146/api/BookList/${encodeURIComponent(book.FileName)}" 
+                <a href="/api/BookList/${encodeURIComponent(book.FileName)}" 
                    target="_blank" 
                    class="preview-btn">
                     👁️ 在线阅读
@@ -177,7 +177,7 @@ async function handleDelete(fileName) {
     if (!confirm(`确定要删除 ${decodeURIComponent(fileName) } 吗 ?`)) return;
 
     try {
-        const response = await fetch(`http://localhost:5146/api/BookList`, {
+        const response = await fetch(`/api/BookList`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
