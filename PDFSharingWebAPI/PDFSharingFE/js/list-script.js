@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const status = document.getElementById('status');
     const fileNameInput = document.getElementById('fileName');
     const fileDescription = document.getElementById('description');
-    const bookListContainer = document.getElementById('bookList');
+    const bookListContainer = document.getElementById('bookList'); // 确保获取书籍列表容器
 
     let selectedFile = null;
 
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (!isAuthenticated()) {
+        if (!isAuthenticated()) { // 调用 script.js 中的认证检查
             showStatus('未认证，请先登录', 'error');
             return;
         }
@@ -67,14 +67,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/BookList', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${getJwtToken()}`
+                    'Authorization': `Bearer ${getJwtToken()}` // 调用 script.js 中的获取 Token
                 },
                 body: formData
             });
 
             if (response.status === 401 || response.status === 403) {
                 showStatus('认证失败或无权限，请重新登录', 'error');
-                setTimeout(() => { logoutUser(); }, 2000);
+                setTimeout(() => { logoutUser(); }, 2000); // 调用 script.js 中的注销
                 return;
             }
 
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showStatus(`上传失败: ${error.message}`, 'error');
         } finally {
             uploadBtn.disabled = false;
-            setTimeout(fetchAndRenderBooks, 500);
+            setTimeout(fetchAndRenderBooks, 500); // 上传后刷新列表
         }
     }
 
@@ -116,23 +116,29 @@ document.addEventListener('DOMContentLoaded', () => {
         fileInput.value = '';
     }
 
+    // 拖放事件监听
     dropZone.addEventListener('dragover', handleDragOver);
     dropZone.addEventListener('dragleave', handleDragLeave);
     dropZone.addEventListener('drop', handleDrop);
 
+    // 文件输入改变事件监听
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
             handleFile(e.target.files[0]);
         }
     });
 
+    // 上传按钮点击事件监听
     uploadBtn.addEventListener('click', () => {
         uploadFile();
     });
 
+
+    // 书籍列表功能
+    // 获取书籍列表并渲染
     async function fetchAndRenderBooks() {
         const status = document.getElementById('status');
-        if (!isAuthenticated()) {
+        if (!isAuthenticated()) { // 调用 script.js 中的认证检查
             showStatus('未认证，请先登录', 'error');
             return;
         }
@@ -141,13 +147,15 @@ document.addEventListener('DOMContentLoaded', () => {
             showStatus('加载书籍列表中...');
             const response = await fetch('/api/BookList', {
                 headers: {
-                    'Authorization': `Bearer ${getJwtToken()}`
+                    'Authorization': `Bearer ${getJwtToken()}` // 调用 script.js 中的获取 Token
                 }
+                // GET request should not have body
+                // body: formData
             });
 
             if (response.status === 401 || response.status === 403) {
                 showStatus('认证失败或无权限，请重新登录', 'error');
-                setTimeout(() => { logoutUser(); }, 2000);
+                setTimeout(() => { logoutUser(); }, 2000); // 调用 script.js 中的注销
                 return;
             }
 
@@ -160,7 +168,9 @@ document.addEventListener('DOMContentLoaded', () => {
             showStatus('书籍列表加载成功', 'success');
         } catch (error) {
             console.error('获取书籍列表失败:', error);
-            showStatus(`⚠️ 无法加载书籍列表，请检查网络连接或认证状态: ${error.message}`, 'error');
+            status.textContent = `⚠️ 无法加载书籍列表，请检查网络连接或认证状态: ${error.message}`;
+            status.className = 'status';
+            status.classList.add('error');
         }
     }
 
@@ -176,11 +186,7 @@ document.addEventListener('DOMContentLoaded', () => {
         list.innerHTML = books.map(book => `
             <div class="book-card">
                 <h3>${book.FileName}</h3>
-                ${book.Description ? `
-                    <div class="book-description">
-                        📝 ${book.Description}
-                    </div>
-                ` : ''}
+                ${book.Description ? `<div class="book-description">📝 ${book.Description.trim()}</div>` : ''}
                 <div class="book-meta">
                     <span class="upload-time">
                         🕒 ${new Date(book.CreationTime).toLocaleDateString()}
@@ -220,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
         attachButtonListeners();
     }
 
-    // 附加按钮事件监听器... (保持不变)
+    // 附加按钮事件监听器
     function attachButtonListeners() {
         document.querySelectorAll('.delete-btn').forEach(button => {
             button.addEventListener('click', function () {
@@ -250,13 +256,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 删除处理... (保持不变)
+    // 删除处理
     async function handleDelete(fileName) {
         const status = document.getElementById('status');
 
         if (!confirm(`确定要删除 ${decodeURIComponent(fileName)} 吗 ?`)) return;
 
-        if (!isAuthenticated()) {
+        if (!isAuthenticated()) { // 调用 script.js 中的认证检查
             showStatus('未认证，请先登录', 'error');
             return;
         }
@@ -267,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getJwtToken()}`
+                    'Authorization': `Bearer ${getJwtToken()}` // 调用 script.js 中的获取 Token
                 },
                 body: JSON.stringify({
                     FileName: decodeURIComponent(fileName)
@@ -276,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.status === 401 || response.status === 403) {
                 showStatus('认证失败或无权限，请重新登录', 'error');
-                setTimeout(() => { logoutUser(); }, 2000);
+                setTimeout(() => { logoutUser(); }, 2000); // 调用 script.js 中的注销
                 return;
             }
 
@@ -285,16 +291,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorResponse.Message || `删除失败: ${response.statusText}`);
             }
 
-            fetchAndRenderBooks();
+            fetchAndRenderBooks(); // 删除成功后刷新列表
             showStatus(`${decodeURIComponent(fileName)} 已成功删除`, 'success');
 
         } catch (error) {
             console.error('删除操作失败:', error);
-            showStatus(`${decodeURIComponent(fileName)} 删除失败: ${error.message}`, 'error');
+            status.textContent = `${decodeURIComponent(fileName)}删除失败`;
+            status.className = 'status';
+            status.classList.add('error');
+
         }
     }
 
-    // 生成分享链接... (保持不变)
+    // 生成分享链接
     async function generateShareLink(fileName, duration, unit, bookCardElement) {
         const status = document.getElementById('status');
         const shareLinkArea = bookCardElement.querySelector('.share-link-area');
@@ -305,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (!isAuthenticated()) {
+        if (!isAuthenticated()) { // 调用 script.js 中的认证检查
             showStatus('未认证，请先登录以生成分享链接', 'error');
             return;
         }
@@ -316,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getJwtToken()}`
+                    'Authorization': `Bearer ${getJwtToken()}` // 调用 script.js 中的获取 Token
                 },
                 body: JSON.stringify({
                     fileName: fileName,
@@ -327,7 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.status === 401 || response.status === 403) {
                 showStatus('认证失败或无权限，请重新登录', 'error');
-                setTimeout(() => { logoutUser(); }, 2000);
+                setTimeout(() => { logoutUser(); }, 2000); // 调用 script.js 中的注销
                 return;
             }
 
@@ -352,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 复制分享链接到剪贴板... (保持不变)
+    // 复制分享链接到剪贴板
     function copyShareLink(inputElement) {
         inputElement.select();
         inputElement.setSelectionRange(0, 99999);
@@ -376,5 +385,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // 页面加载时获取并渲染书籍列表
     fetchAndRenderBooks();
 });

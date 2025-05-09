@@ -22,7 +22,7 @@ function isAuthenticated() {
     return token !== null && token !== 'undefined' && token !== '';
 }
 
-// 新增：从JWT Token中提取用户名 - 修正版
+// 从JWT Token中提取用户名
 function getUsernameFromToken() {
     const token = getJwtToken();
     if (!token || token === 'undefined' || token === '') {
