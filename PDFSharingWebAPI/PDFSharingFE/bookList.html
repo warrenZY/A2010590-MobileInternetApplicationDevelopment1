@@ -11,6 +11,11 @@
     <div class="container">
         <h1>PDF书籍库</h1>
 
+        <div id="userInfoContainer">
+            <span>当前用户: <strong id="loggedInUsername"></strong></span>
+            <button id="logoutButtonTop">注销</button>
+        </div>
+
         <div class="upload-area">
             <div class="drop-zone" id="dropZone">
                 <div>拖拽PDF文件至此区域上传</div>
@@ -33,7 +38,7 @@
             </div>
 
         </div>
-        
+
 
         <!-- 状态提示 -->
         <div id="status" class="status"></div>

@@ -2,10 +2,13 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.FileProviders;
 using System.Net;
 using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authorization;
+using System;
+using System.Threading.Tasks; // 添加Task命名空间
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
 
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
@@ -13,16 +16,30 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 });
 
 builder.Services.AddCors(options => {
-        options.AddPolicy("AllowAll", policy => {
-            policy.AllowAnyOrigin()
-                  .AllowAnyMethod()
-                  .AllowAnyHeader();
-        });
+    options.AddPolicy("AllowAll", policy => {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true, // 验证签发者
+            ValidateAudience = true, // 验证接收者
+            ValidateLifetime = true, // 验证过期时间
+            ValidateIssuerSigningKey = true, // 验证签名密钥
+            ValidIssuer = builder.Configuration["Jwt:Issuer"], // 合法的签发者
+            ValidAudience = builder.Configuration["Jwt:Audience"], // 合法的接收者
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)) // 签名密钥
+        };
     });
 
+builder.Services.AddAuthorization();
 
-
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -34,14 +51,15 @@ lifetime.ApplicationStarted.Register(() =>
     LogServerAccessUrls();
 });
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseAuthorization();
+app.UseAuthentication(); // 使用认证中间件
+app.UseAuthorization(); // 使用授权中间件
+
 app.UseCors("AllowAll");
 
 app.MapControllers();
@@ -56,74 +74,54 @@ var defaultFileOptions = new DefaultFilesOptions();
 defaultFileOptions.DefaultFileNames.Clear();
 defaultFileOptions.DefaultFileNames.Add("main.html");
 app.UseDefaultFiles(defaultFileOptions);
-//Defalut redirect to main.html
 app.MapGet("/", () => Results.Redirect("/static/main.html"));
 
 app.Run();
 
-/// Logs all accessible server URLs in a properly formatted single message
-/// Output format: 
-/// Server URLs:
-///     https://ip1:port1    http://ip1:port2
-///     https://ip2:port1    http://ip2:port2
-/// </summary>
 void LogServerAccessUrls()
 {
     var logger = app.Services.GetRequiredService<ILogger<Program>>();
     var logBuilder = new StringBuilder();
-    logBuilder.AppendLine("Server URLs:");
+    logBuilder.AppendLine("服务器可访问URL:");
 
-    // Get the actual listening URLs from the application's Urls property.
-    // This is the most reliable source for Kestrel's actual listening addresses
-    // after it has started. Configuration sources like appsettings or environment variables
-    // determine *what* Kestrel tries to listen on, but app.Urls shows the result.
     var urls = app.Urls
         .Select(url => Uri.TryCreate(url, UriKind.Absolute, out var uri) ? uri : null)
-        .Where(uri => uri != null) // Filter out any invalid or null Uris
-        .ToList(); // Convert to a list
+        .Where(uri => uri != null)
+        .ToList();
 
-    // *** CRUCIAL CHECK: ONLY proceed if we found valid URLs ***
-    // If the urls list is empty, it means no valid listening addresses were found.
     if (!urls.Any())
     {
-        logBuilder.AppendLine("    No available address found!");
+        logBuilder.AppendLine("    未找到可用的地址!");
         logger.LogInformation(logBuilder.ToString().TrimEnd());
         return;
     }
 
-    // Get all non-loopback IPv4 addresses
     var ips = Dns.GetHostAddresses(Dns.GetHostName())
         .Where(addr => addr.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork
                        && !IPAddress.IsLoopback(addr))
         .Distinct()
         .ToList();
 
-    // If no external IP addresses are found, use localhost (127.0.0.1) as a fallback
     var effectiveIps = ips.Any() ? ips : new List<IPAddress> { IPAddress.Loopback };
 
-    // Use u.Scheme and u.Port directly as the urls list only contains valid Uri objects.
     int maxUrlLength = urls.Max(u => $"{u!.Scheme}://xxx.xxx.xxx.xxx:{u.Port}".Length) + 2;
 
-
-    // Iterate through the effective IP addresses and listening URLs to build the log message.
     foreach (var ip in effectiveIps)
     {
-        logBuilder.Append("    "); // 4-space base indent
+        logBuilder.Append("    ");
 
         for (int i = 0; i < urls.Count; i++)
         {
-            var url = urls[i]; // Get the Uri object
+            var url = urls[i];
             var formattedUrl = $"{url!.Scheme}://{ip}:{url.Port}";
             logBuilder.Append(formattedUrl);
 
-            // Add padding spaces for alignment
             int paddingNeeded = maxUrlLength - formattedUrl.Length;
             logBuilder.Append(new string(' ', Math.Max(1, paddingNeeded)));
         }
 
-        logBuilder.AppendLine(); // Newline after processing each IP address.
+        logBuilder.AppendLine();
     }
 
-    // Log the final constructed information.
     logger.LogInformation(logBuilder.ToString().TrimEnd());
 }

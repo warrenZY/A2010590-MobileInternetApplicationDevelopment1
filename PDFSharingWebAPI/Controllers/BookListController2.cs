@@ -2,13 +2,18 @@
 using PDFSharingWebAPI.Models;
 using System.Net.Http.Headers;
 using System.Text;
+using Microsoft.AspNetCore.Authorization; // 添加引用
+using System.IO;
+using System.Collections.Generic;
+using System.Linq;
+using System;
 
 namespace PDFSharingWebAPI.Controllers;
 
+[Authorize] // 需要认证才能访问控制器中的大多数Action
 public partial class BookListController : ControllerBase
 {
-
-    //Get /api/BookList 
+    // Get /api/BookList
     [HttpGet]
     public ActionResult<IEnumerable<PdfFileInfo>> GetPdfList()
     {
@@ -17,19 +22,17 @@ public partial class BookListController : ControllerBase
             if (!Directory.Exists(filePath))
             {
                 Directory.CreateDirectory(filePath);
-                return NotFound(new { Message = "PDF file directory not found, creating new..." });
+                return NotFound(new { Message = "PDF文件目录不存在，已创建新目录" });
             }
 
-            // Read description
             var descriptions = ReadDescriptionFile();
 
-            // Search path
             var pdfFiles = Directory.GetFiles(filePath, "*.pdf", SearchOption.TopDirectoryOnly)
                 .Select(filePath => new FileInfo(filePath))
                 .Select(fi => new PdfFileInfo
                 {
                     FileName = fi.Name,
-                    CreationTime = fi.CreationTime,
+                    CreationTime = fi.CreationTimeUtc,
                     Description = descriptions.TryGetValue(fi.Name, out var desc) ? desc : null
                 })
                 .OrderBy(f => f.FileName)
@@ -39,19 +42,18 @@ public partial class BookListController : ControllerBase
         }
         catch (UnauthorizedAccessException ex)
         {
-            return StatusCode(403, new { Message = $"Access denied: {ex.Message}" });
+            return StatusCode(403, new { Message = $"无权访问: {ex.Message}" });
         }
         catch (IOException ex)
         {
-            return StatusCode(500, new { Message = $"IO error: {ex.Message}" });
+            return StatusCode(500, new { Message = $"IO错误: {ex.Message}" });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { Message = $"Server error: {ex.Message}" });
+            return StatusCode(500, new { Message = $"服务器错误: {ex.Message}" });
         }
     }
 
-    
     private void UpdateDescriptionFile(string filePath, string fileName, string description)
     {
         var lines = new List<string>();
@@ -64,7 +66,6 @@ public partial class BookListController : ControllerBase
 
         var newLine = $"{fileName}---{description.Replace("\n", " ").Replace("\r", "")}";
 
-        // Find and replace exist data.
         for (int i = 0; i < lines.Count; i++)
         {
             if (lines[i].StartsWith(fileName + "---"))
@@ -75,13 +76,11 @@ public partial class BookListController : ControllerBase
             }
         }
 
-        // Add new line.
         if (!exists)
         {
             lines.Add(newLine);
         }
 
-        // Write data in to the file.
         using (var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
         using (var sw = new StreamWriter(fs, Encoding.UTF8))
         {
@@ -92,8 +91,9 @@ public partial class BookListController : ControllerBase
         }
     }
 
-    //Get /api/BookList/{filename}
+    // Get /api/BookList/{filename} - 提供文件内容
     [HttpGet("{filename}")]
+    [AllowAnonymous] // 允许匿名访问此Action，以便未登录用户或通过直链预览/下载
     public IActionResult GetPdf(string filename)
     {
         try
@@ -101,45 +101,44 @@ public partial class BookListController : ControllerBase
             var safeFileName = Path.GetFileName(filename);
             if (string.IsNullOrEmpty(safeFileName))
             {
-                return BadRequest("Invalid file name");
+                return BadRequest("无效的文件名");
             }
 
             var fullPath = Path.Combine(filePath, safeFileName);
 
             if (!System.IO.File.Exists(fullPath))
             {
-                return NotFound($"File {safeFileName} not found");
+                return NotFound($"文件 '{safeFileName}' 不存在");
             }
 
-            // check required file type
             if (!Path.GetExtension(fullPath).Equals(".pdf", StringComparison.OrdinalIgnoreCase))
             {
-                return BadRequest("Requested file is not a PDF");
+                return BadRequest("请求的文件不是PDF");
             }
 
-            // Allow browser previewing feature
             Response.Headers.Append("Content-Disposition", new ContentDispositionHeaderValue("inline")
             {
-                FileNameStar = safeFileName // 支持UTF-8文件名编码
+                FileNameStar = safeFileName
             }.ToString());
 
-            // 返回文件流（不自动设置FileDownloadName）
-            return new PhysicalFileResult(fullPath, "application/pdf")
+            var fileStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return new FileStreamResult(fileStream, "application/pdf")
             {
-                EnableRangeProcessing = true // 保持断点续传支持
+                EnableRangeProcessing = true
             };
         }
         catch (UnauthorizedAccessException ex)
         {
-            return StatusCode(403, $"Access denied: {ex.Message}");
+            // 尽管允许匿名，但如果底层文件系统权限问题，仍可能发生403
+            return StatusCode(403, $"无权访问文件系统: {ex.Message}");
         }
         catch (IOException ex)
         {
-            return StatusCode(500, $"IO error: {ex.Message}");
+            return StatusCode(500, $"IO错误: {ex.Message}");
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"Server error: {ex.Message}");
+            return StatusCode(500, $"服务器错误: {ex.Message}");
         }
     }
 
@@ -153,23 +152,33 @@ public partial class BookListController : ControllerBase
             return descriptions;
         }
 
-        foreach (var line in System.IO.File.ReadLines(descFilePath))
+        try
         {
-            try
+            using (var fs = new FileStream(descFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var reader = new StreamReader(fs, Encoding.UTF8))
             {
-                var parts = line.Split(new[] { "---" }, 2, StringSplitOptions.None);
-                if (parts.Length == 2 && !string.IsNullOrWhiteSpace(parts[0]))
+                string? line;
+                while ((line = reader.ReadLine()) != null)
                 {
-                    // Use filename as Key, latest will override.
-                    descriptions[parts[0]] = parts[1];
+                    try
+                    {
+                        var parts = line.Split(new[] { "---" }, 2, StringSplitOptions.None);
+                        if (parts.Length == 2 && !string.IsNullOrWhiteSpace(parts[0]))
+                        {
+                            descriptions[parts[0]] = parts[1];
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"读取描述文件行时发生错误: {line} - {ex.Message}");
+                    }
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Invalid description line: {line} - {ex.Message}");
-            }
         }
-
+        catch (Exception ex)
+        {
+            Console.WriteLine($"读取描述文件时发生错误: {ex.Message}");
+        }
         return descriptions;
     }
 }

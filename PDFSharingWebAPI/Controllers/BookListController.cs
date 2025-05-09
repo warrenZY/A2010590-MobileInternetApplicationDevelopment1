@@ -1,23 +1,26 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿// BookListController.cs
+using Microsoft.AspNetCore.Mvc;
 using PDFSharingWebAPI.Models;
 using System.IO;
-namespace PDFSharingWebAPI.Controllers;
+using Microsoft.AspNetCore.Authorization;
+using System.Linq;
+using System;
+using System.Collections.Generic; // 添加引用
+using System.Text; // 添加引用
 
+namespace PDFSharingWebAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize] // 需要认证才能访问
 public partial class BookListController : ControllerBase
 {
-
     string filePath = Path.Combine(Directory.GetCurrentDirectory(), "pdf");
 
-
-    // POST /api/BookList
     [HttpPost]
     public AddBookResponse Post([FromForm] AddBookRequest request)
     {
-        
-        Console.WriteLine($"Recived file: {request.Name}");
+        Console.WriteLine($"接收到文件: {request.Name}");
         AddBookResponse response = new()
         {
             Message = string.Empty,
@@ -31,7 +34,7 @@ public partial class BookListController : ControllerBase
                 .Select(e => e.ErrorMessage);
             {
                 response.Result = "Failure";
-                response.Message = errors.ToString();
+                response.Message = string.Join("; ", errors);
             }
             return response;
         }
@@ -40,75 +43,77 @@ public partial class BookListController : ControllerBase
         {
             string fullPath = Path.Combine(filePath, request.Name);
             Directory.CreateDirectory(filePath);
-            using (var stream = new FileStream(fullPath, FileMode.OpenOrCreate))
+            try
             {
-                request.FileData.CopyTo(stream);
-            }
+                using (var stream = new FileStream(fullPath, FileMode.Create))
+                {
+                    request.FileData.CopyTo(stream);
+                }
 
-            if (!string.IsNullOrWhiteSpace(request.Description))
+                if (!string.IsNullOrWhiteSpace(request.Description))
+                {
+                    string descFilePath = Path.Combine(filePath, "Description.txt");
+                    UpdateDescriptionFile(descFilePath, request.Name, request.Description);
+                }
+
+                response.Result = "Success";
+                response.Message = $"成功上传: {request.Name}";
+            }
+            catch (Exception ex)
             {
-                string descFilePath = Path.Combine(filePath, "Description.txt");
-                UpdateDescriptionFile(descFilePath, request.Name, request.Description);
+                response.Result = "Failure";
+                response.Message = $"文件处理失败: {ex.Message}";
             }
-
-            response.Result = "Success";
-            response.Message = $"Successfully uploaded: {request.Name}";
         }
         else
         {
             response.Result = "Failure";
-            response.Message = "Empty file";
+            response.Message = "空文件";
         }
         return response;
     }
 
-    //Delete /api/BookList
     [HttpDelete]
-    public ActionResult<RmvBookResponse> Delete([FromBody]RmvBookRequest request)
+    public ActionResult<RmvBookResponse> Delete([FromBody] RmvBookRequest request)
     {
         try
         {
-            // 验证请求参数
             if (string.IsNullOrWhiteSpace(request?.FileName))
             {
                 return BadRequest(new RmvBookResponse
                 {
                     Success = false,
-                    Message = "Empty file name"
+                    Message = "文件名为空"
                 });
             }
 
-            // 安全验证文件名
             var safeFileName = Path.GetFileName(request.FileName);
             if (string.IsNullOrEmpty(safeFileName) || safeFileName.Contains(".."))
             {
                 return BadRequest(new RmvBookResponse
                 {
                     Success = false,
-                    Message = "Invalid file name"
+                    Message = "无效的文件名"
                 });
             }
 
-            // 构建完整路径
             var fullPath = Path.Combine(filePath, safeFileName);
 
-            // 检查文件是否存在
             if (!System.IO.File.Exists(fullPath))
             {
                 return NotFound(new RmvBookResponse
                 {
                     Success = false,
-                    Message = "Target file doesn't exist"
+                    Message = "目标文件不存在"
                 });
             }
 
-            // 执行删除操作
             System.IO.File.Delete(fullPath);
-            Console.WriteLine($"Removed file: {safeFileName}");
+            Console.WriteLine($"已移除文件: {safeFileName}");
             return Ok(new RmvBookResponse
             {
                 Success = true,
-                Message = $"Successfully removed: {safeFileName}"
+                Message = $"成功移除: {safeFileName}"
             });
         }
         catch (UnauthorizedAccessException ex)
@@ -116,7 +121,7 @@ public partial class BookListController : ControllerBase
             return StatusCode(403, new RmvBookResponse
             {
                 Success = false,
-                Message = $"Access denied: {ex.Message}"
+                Message = $"无权访问: {ex.Message}"
             });
         }
         catch (IOException ex)
@@ -124,7 +129,7 @@ public partial class BookListController : ControllerBase
             return StatusCode(500, new RmvBookResponse
             {
                 Success = false,
-                Message = $"IO exception: {ex.Message}"
+                Message = $"IO错误: {ex.Message}"
             });
         }
         catch (Exception ex)
@@ -132,9 +137,8 @@ public partial class BookListController : ControllerBase
             return StatusCode(500, new RmvBookResponse
             {
                 Success = false,
-                Message = $"Server error: {ex.Message}"
+                Message = $"服务器错误: {ex.Message}"
             });
         }
     }
 }
-
